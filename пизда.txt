@@ -1,0 +1,78 @@
+-- Image Toggle
+-- Маленькая кнопка в левом нижнем углу.
+-- Клик = показать картинку, повторный клик = скрыть.
+-- Картинка находится в отдельном ScreenGui с низким DisplayOrder,
+-- поэтому окна трейда/диалоги с большим DisplayOrder будут поверх неё.
+
+local Players = game:GetService("Players")
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+local IMAGE_URL = "https://raw.githubusercontent.com/ipadys/core/refs/heads/main/photo_2025-12-03_21-03-11.jpg"
+local FILE_NAME = "toggle_image.jpg"
+
+local function getImage()
+    if not isfile(FILE_NAME) then
+        writefile(FILE_NAME, game:HttpGet(IMAGE_URL))
+    end
+    return getcustomasset(FILE_NAME)
+end
+
+-- Удаляем старые версии, если скрипт был инжектирован повторно.
+local oldControl = playerGui:FindFirstChild("ImageToggleControlGui")
+if oldControl then oldControl:Destroy() end
+
+local oldImage = playerGui:FindFirstChild("ImageToggleImageGui")
+if oldImage then oldImage:Destroy() end
+
+-- Отдельный GUI только для кнопки: он всегда остаётся кликабельным.
+local controlGui = Instance.new("ScreenGui")
+controlGui.Name = "ImageToggleControlGui"
+controlGui.ResetOnSpawn = false
+controlGui.DisplayOrder = 999999
+controlGui.Parent = playerGui
+
+-- Отдельный GUI для картинки: низкий DisplayOrder, чтобы обычные игровые
+-- окна (в том числе трейд) могли отображаться поверх неё.
+local imageGui = Instance.new("ScreenGui")
+imageGui.Name = "ImageToggleImageGui"
+imageGui.ResetOnSpawn = false
+imageGui.DisplayOrder = -100
+imageGui.Parent = playerGui
+
+-- Маленькая почти незаметная кнопка в левом нижнем углу.
+local button = Instance.new("TextButton")
+button.Name = "ToggleButton"
+button.Size = UDim2.fromOffset(24, 24)
+button.Position = UDim2.new(0, 4, 1, -28)
+button.BackgroundTransparency = 0.92
+button.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+button.Text = ""
+button.AutoButtonColor = false
+button.BorderSizePixel = 0
+button.Parent = controlGui
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(1, 0)
+corner.Parent = button
+
+local image = Instance.new("ImageLabel")
+image.Name = "Image"
+image.Size = UDim2.fromOffset(600, 600)
+image.Position = UDim2.fromScale(0.5, 0.5)
+image.AnchorPoint = Vector2.new(0.5, 0.5)
+image.BackgroundTransparency = 1
+image.Visible = false
+image.ZIndex = 1
+image.Parent = imageGui
+
+local ok, asset = pcall(getImage)
+if ok and asset then
+    image.Image = asset
+else
+    warn("Could not load image: " .. tostring(asset))
+end
+
+button.MouseButton1Click:Connect(function()
+    image.Visible = not image.Visible
+end)
